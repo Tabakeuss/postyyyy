@@ -28,16 +28,18 @@
         #editor-container { height: 350px; background: #fff; color: #000; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
         .ql-toolbar { border-top-left-radius: 8px; border-top-right-radius: 8px; background: #f5f5f5; }
         
-        /* Стилизация кастомных кнопок в тулбаре */
-        .ql-spoiler { width: auto !important; padding: 0 5px !important; font-size: 12px !important; font-weight: bold; color: #d9534f; }
+        /* Кнопки в тулбаре */
+        .ql-spoiler { width: auto !important; padding: 0 5px !important; font-size: 11px !important; font-weight: bold; color: #d9534f; }
         .ql-spoiler::after { content: " 👁 Спойлер"; }
-        .ql-expandable-blockquote { width: auto !important; padding: 0 5px !important; font-size: 12px !important; font-weight: bold; color: #0275d8; }
-        .ql-expandable-blockquote::after { content: " 📂 Раскр. цитата"; }
+        .ql-expandable-blockquote { width: auto !important; padding: 0 5px !important; font-size: 11px !important; font-weight: bold; color: #0275d8; }
+        .ql-expandable-blockquote::after { content: " 📂 Раскр. цит"; }
+        .ql-tg-emoji { width: auto !important; padding: 0 5px !important; font-size: 11px !important; font-weight: bold; color: #f0ad4e; }
+        .ql-tg-emoji::after { content: " ✨ Прем. Эмодзи"; }
 
-        /* Эффекты оформления прямо внутри редактора */
-        .tg-spoiler { background-color: #ddd; color: transparent; text-shadow: 0 0 6px rgba(0,0,0,0.6); border-radius: 4px; padding: 0 2px; cursor: pointer; }
-        .tg-spoiler:hover { color: #000; text-shadow: none; background-color: #eee; }
+        /* Оформление внутри редактора */
+        .tg-spoiler { background-color: #ddd; color: transparent; text-shadow: 0 0 6px rgba(0,0,0,0.6); border-radius: 4px; padding: 0 2px; }
         .tg-expandable-blockquote { border-left: 4px dashed #0275d8 !important; background-color: #f4f9ff; padding-left: 10px; margin: 5px 0; font-style: italic; }
+        .tg-premium-emoji { background-color: #fff8e7; border: 1px dashed #f0ad4e; border-radius: 4px; padding: 0 2px; position: relative; }
         
         #send-btn {
             display: block; width: 100%; padding: 12px;
@@ -64,46 +66,48 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script>
         const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
+        tg.ready(); tg.expand();
 
-        // Регистрируем формат Спойлера для Quill
         const Inline = Quill.import('blots/inline');
+        
+        // Регистрируем Спойлер
         class SpoilerBlot extends Inline {
-            static create() {
-                let node = super.create();
-                node.setAttribute('class', 'tg-spoiler');
-                return node;
-            }
+            static create() { let node = super.create(); node.setAttribute('class', 'tg-spoiler'); return node; }
             static formats(node) { return true; }
         }
-        SpoilerBlot.blotName = 'spoiler';
-        SpoilerBlot.tagName = 'span';
+        SpoilerBlot.blotName = 'spoiler'; SpoilerBlot.tagName = 'span';
         Quill.register(SpoilerBlot);
 
-        // Регистрируем формат Раскрывающейся цитаты для Quill
-        const Blockquote = Quill.import('formats/blockquote');
-        class ExpandableBlockquote extends Blockquote {
-            static create() {
+        // Регистрируем Премиум-Эмодзи
+        class TgEmojiBlot extends Inline {
+            static create(value) {
                 let node = super.create();
-                node.setAttribute('class', 'tg-expandable-blockquote');
+                node.setAttribute('class', 'tg-premium-emoji');
+                node.setAttribute('data-id', value);
                 return node;
             }
+            static formats(node) { return node.getAttribute('data-id'); }
+        }
+        TgEmojiBlot.blotName = 'tg-emoji'; TgEmojiBlot.tagName = 'span';
+        Quill.register(TgEmojiBlot);
+
+        // Регистрируем Сворачиваемую цитату
+        const Blockquote = Quill.import('formats/blockquote');
+        class ExpandableBlockquote extends Blockquote {
+            static create() { let node = super.create(); node.setAttribute('class', 'tg-expandable-blockquote'); return node; }
             static formats(node) { return true; }
         }
-        ExpandableBlockquote.blotName = 'expandable-blockquote';
-        ExpandableBlockquote.tagName = 'blockquote';
+        ExpandableBlockquote.blotName = 'expandable-blockquote'; ExpandableBlockquote.tagName = 'blockquote';
         Quill.register(ExpandableBlockquote);
 
-        // Инициализация редактора с кастомным тулбаром
         const quill = new Quill('#editor-container', {
             theme: 'snow',
             modules: {
                 toolbar: {
                     container: [
                         ['bold', 'italic'],
-                        ['blockquote', 'expandable-blockquote'], // Обычная и Сворачиваемая цитаты
-                        ['spoiler'],                             // Кнопка спойлера
+                        ['blockquote', 'expandable-blockquote'],
+                        ['spoiler', 'tg-emoji'],
                         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                         ['clean']
                     ],
@@ -111,22 +115,26 @@
                         'spoiler': function() {
                             const range = this.quill.getSelection();
                             if (range) {
-                                const format = this.quill.getFormat(range);
-                                if (format.spoiler) {
-                                    this.quill.removeFormat(range.index, range.length);
-                                } else {
-                                    this.quill.format('spoiler', true);
-                                }
+                                if (this.quill.getFormat(range).spoiler) { this.quill.removeFormat(range.index, range.length); }
+                                else { this.quill.format('spoiler', true); }
                             }
                         },
                         'expandable-blockquote': function() {
                             const range = this.quill.getSelection();
                             if (range) {
-                                const format = this.quill.getFormat(range);
-                                if (format['expandable-blockquote']) {
-                                    this.quill.format('expandable-blockquote', false);
+                                if (this.quill.getFormat(range)['expandable-blockquote']) { this.quill.format('expandable-blockquote', false); }
+                                else { this.quill.format('expandable-blockquote', true); }
+                            }
+                        },
+                        'tg-emoji': function() {
+                            const range = this.quill.getSelection();
+                            if (range) {
+                                const currentFormat = this.quill.getFormat(range)['tg-emoji'];
+                                if (currentFormat) {
+                                    this.quill.removeFormat(range.index, range.length);
                                 } else {
-                                    this.quill.format('expandable-blockquote', true);
+                                    const emojiId = prompt('Введи скопированный ID премиум-эмодзи:');
+                                    if (emojiId) { this.quill.format('tg-emoji', emojiId.trim()); }
                                 }
                             }
                         }
@@ -139,22 +147,14 @@
             try {
                 let htmlContent = quill.getSemanticHTML();
                 const channelId = document.getElementById('channel-id').value.trim();
+                if (!htmlContent || htmlContent === '<p><br></p>') return;
 
-                if (!htmlContent || htmlContent === '<p><br></p>') {
-                    alert('Редактор пуст!');
-                    return;
-                }
-
-                const dataToSend = {
+                tg.sendData(JSON.stringify({
                     html: htmlContent,
                     channel_id: channelId ? channelId : null
-                };
-
-                tg.sendData(JSON.stringify(dataToSend));
+                }));
                 tg.close(); 
-            } catch (err) {
-                alert('Ошибка: ' + err.message);
-            }
+            } catch (err) { alert('Ошибка: ' + err.message); }
         });
     </script>
 </body>
