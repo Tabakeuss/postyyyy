@@ -80,50 +80,61 @@
     <script>
         // Инициализируем Telegram Web App
         const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand(); // Расширяем на весь экран
+        
+        try {
+            tg.ready();
+            tg.expand(); // Расширяем на весь экран смартфона
+        } catch (e) {
+            alert("Ошибка инициализации Telegram WebApp: " + e.message);
+        }
 
-        // Инициализируем редактор Quill с нужными нам фичами (жирный, курсив, списки, код, блоки)
+        // Настраиваем редактор
         const quill = new Quill('#editor-container', {
             theme: 'snow',
             modules: {
                 toolbar: [
-                    ['bold', 'italic', 'strike'],        // Форматирование
-                    ['code', 'code-block'],              // Код
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }], // Списки
-                    ['blockquote'],                      // Цитаты / Сворачиваемые блоки
-                    ['clean']                            // Сброс
+                    ['bold', 'italic', 'strike'],        
+                    ['code', 'code-block'],              
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
+                    ['blockquote'],                      
+                    ['clean']                            
                 ]
             }
         });
 
+        // Обработчик кнопки отправки
         document.getElementById('send-btn').addEventListener('click', () => {
-    try {
-        // 1. Получаем HTML содержимое редактора
-        let htmlContent = quill.getSemanticHTML();
-        const channelId = document.getElementById('channel-id').value.trim();
+            try {
+                // Получаем чистый HTML из редактора
+                let htmlContent = quill.getSemanticHTML();
+                const channelId = document.getElementById('channel-id').value.trim();
 
-        if (!htmlContent || htmlContent === '<p><br></p>') {
-            alert('Сначала напиши что-нибудь в редакторе!');
-            return;
-        }
+                // Проверяем, не пустой ли текст
+                if (!htmlContent || htmlContent === '<p><br></p>') {
+                    alert('Сначала напиши что-нибудь в редакторе!');
+                    return;
+                }
 
-        const dataToSend = {
-            html: htmlContent,
-            channel_id: channelId ? channelId : null
-        };
+                // Формируем объект с данными
+                const dataToSend = {
+                    html: htmlContent,
+                    channel_id: channelId ? channelId : null
+                };
 
-        // Текст для проверки перед отправкой
-        alert('Отправляем данные: ' + JSON.stringify(dataToSend));
+                // Отладочное окно: покажет, что именно отправляется в бот
+                alert('Отправляем данные боту:\n' + JSON.stringify(dataToSend, null, 2));
 
-        // 2. Отправляем данные обратно боту
-        tg.sendData(JSON.stringify(dataToSend));
-        tg.close(); 
-    } catch (err) {
-        // Если упал сам JS — мы увидим ошибку на экране смартфона/ПК
-        alert('Ошибка в JS: ' + err.message);
-    }
-});
+                // Передаем данные в Telegram
+                tg.sendData(JSON.stringify(dataToSend));
+                
+                // Закрываем окно мини-приложения
+                tg.close(); 
+                
+            } catch (err) {
+                // Если упадет сам JavaScript — мы увидим это в окне алерта
+                alert('Произошла ошибка внутри WebApp:\n' + err.message);
+            }
+        });
     </script>
 </body>
 </html>
