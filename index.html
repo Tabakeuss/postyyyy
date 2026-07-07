@@ -510,7 +510,7 @@
                 document.getElementById('send-btn').disabled = true;
 
                 // Вставь URL своего запущенного Python-сервера вместо 'https://твой-домен-бота.com/api/publish'
-                fetch('http://0.0.0.0:8000', {
+                fetch('http://localhost:8000/api/publish', {
                     method: 'POST',
                     body: formData
                 })
