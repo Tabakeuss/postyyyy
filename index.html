@@ -25,21 +25,48 @@
             background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
             color: var(--tg-theme-text-color, #000000);
         }
-        #editor-container { height: 350px; background: #fff; color: #000; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
+        #editor-container { height: 300px; background: #fff; color: #000; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
         .ql-toolbar { border-top-left-radius: 8px; border-top-right-radius: 8px; background: #f5f5f5; }
         
-        /* Кнопки в тулбаре */
+        /* Стили кнопок тулбара */
         .ql-spoiler { width: auto !important; padding: 0 5px !important; font-size: 11px !important; font-weight: bold; color: #d9534f; }
         .ql-spoiler::after { content: " 👁 Спойлер"; }
         .ql-expandable-blockquote { width: auto !important; padding: 0 5px !important; font-size: 11px !important; font-weight: bold; color: #0275d8; }
         .ql-expandable-blockquote::after { content: " 📂 Раскр. цит"; }
         .ql-tg-emoji { width: auto !important; padding: 0 5px !important; font-size: 11px !important; font-weight: bold; color: #f0ad4e; }
-        .ql-tg-emoji::after { content: " ✨ Прем. Эмодзи"; }
+        .ql-tg-emoji::after { content: " ✨ Ручной ID"; }
 
-        /* Оформление внутри редактора */
+        /* Оформление в редакторе */
         .tg-spoiler { background-color: #ddd; color: transparent; text-shadow: 0 0 6px rgba(0,0,0,0.6); border-radius: 4px; padding: 0 2px; }
         .tg-expandable-blockquote { border-left: 4px dashed #0275d8 !important; background-color: #f4f9ff; padding-left: 10px; margin: 5px 0; font-style: italic; }
-        .tg-premium-emoji { background-color: #fff8e7; border: 1px dashed #f0ad4e; border-radius: 4px; padding: 0 2px; position: relative; }
+        .tg-premium-emoji { background-color: #fff8e7; border: 1px dashed #f0ad4e; border-radius: 4px; padding: 0 2px; }
+        
+        /* Панель кастомного пака эмодзи */
+        .emoji-pack-box {
+            background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 15px;
+        }
+        .emoji-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .emoji-btn {
+            font-size: 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .emoji-btn:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
         
         #send-btn {
             display: block; width: 100%; padding: 12px;
@@ -61,6 +88,11 @@
         <div id="editor-container"></div>
     </div>
 
+    <div class="emoji-pack-box">
+        <label>✨ Твой Премиум Пак (Быстрый клик):</label>
+        <div class="emoji-grid" id="emoji-pack-grid"></div>
+    </div>
+
     <button id="send-btn">Опубликовать</button>
 
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
@@ -68,9 +100,668 @@
         const tg = window.Telegram.WebApp;
         tg.ready(); tg.expand();
 
+        // --- НАСТРОЙ СВОЙ ПАК ТУТ ---
+        // Сюда ты можешь добавлять любые эмодзи. Узнавай их ID через бота и вписывай ниже.
+        const myEmojiPack = [
+		{
+			"char": "🤩",
+			"id": "5249161857821873847"
+		},
+		{
+			"char": "🌟",
+			"id": "5242382522528068307"
+		},
+		{
+			"char": "😀",
+			"id": "5267240015120862826"
+		},
+		{
+			"char": "🤩",
+			"id": "5269363829204098934"
+		},
+		{
+			"char": "🤩",
+			"id": "5267328976778464673"
+		},
+		{
+			"char": "🤩",
+			"id": "5267216933966613286"
+		},
+		{
+			"char": "🤩",
+			"id": "5269507775033022686"
+		},
+		{
+			"char": "🤩",
+			"id": "5271565030008069086"
+		},
+		{
+			"char": "🤩",
+			"id": "5352743953466681967"
+		},
+		{
+			"char": "🤩",
+			"id": "5285351952337639026"
+		},
+		{
+			"char": "🤩",
+			"id": "5285522174776489048"
+		},
+		{
+			"char": "🤩",
+			"id": "5219698463775675801"
+		},
+		{
+			"char": "🤩",
+			"id": "5244609759423782951"
+		},
+		{
+			"char": "🤩",
+			"id": "5395528734042250808"
+		},
+		{
+			"char": "🤩",
+			"id": "5395616218231105399"
+		},
+		{
+			"char": "🤩",
+			"id": "5244860649938380108"
+		},
+		{
+			"char": "🤩",
+			"id": "5267269770654289141"
+		},
+		{
+			"char": "🤩",
+			"id": "5337280658156838285"
+		},
+		{
+			"char": "🤩",
+			"id": "5337154330283758428"
+		},
+		{
+			"char": "🤩",
+			"id": "5219695401463994109"
+		},
+		{
+			"char": "🤩",
+			"id": "5336842159175784856"
+		},
+		{
+			"char": "🤩",
+			"id": "5264984332656741058"
+		},
+		{
+			"char": "🤩",
+			"id": "5220164197144354088"
+		},
+		{
+			"char": "🤩",
+			"id": "5222141153410833467"
+		},
+		{
+			"char": "🤩",
+			"id": "5267463787211953765"
+		},
+		{
+			"char": "🤩",
+			"id": "5264998360019935602"
+		},
+		{
+			"char": "🤩",
+			"id": "5267111694382960566"
+		},
+		{
+			"char": "🤩",
+			"id": "5267345293359221817"
+		},
+		{
+			"char": "🤩",
+			"id": "5267242991533200070"
+		},
+		{
+			"char": "🤩",
+			"id": "5267123874910214833"
+		},
+		{
+			"char": "🤩",
+			"id": "5269367875063289177"
+		},
+		{
+			"char": "🤩",
+			"id": "5267303546277109119"
+		},
+		{
+			"char": "🤩",
+			"id": "5267484553378831301"
+		},
+		{
+			"char": "🛠️",
+			"id": "5188177741740016603"
+		},
+		{
+			"char": "🤩",
+			"id": "5266963311852820382"
+		},
+		{
+			"char": "🤩",
+			"id": "5269766929064694974"
+		},
+		{
+			"char": "1️⃣",
+			"id": "5276071597457837480"
+		},
+		{
+			"char": "2️⃣",
+			"id": "5276354180536109066"
+		},
+		{
+			"char": "3️⃣",
+			"id": "5276289923530395132"
+		},
+		{
+			"char": "🤩",
+			"id": "5407060463533981724"
+		},
+		{
+			"char": "🤩",
+			"id": "5264714217868532539"
+		},
+		{
+			"char": "🤩",
+			"id": "5267178403815004811"
+		},
+		{
+			"char": "🤩",
+			"id": "5285128841671512027"
+		},
+		{
+			"char": "🤩",
+			"id": "5242466510613537776"
+		},
+		{
+			"char": "🗒",
+			"id": "5426865674427339577"
+		},
+		{
+			"char": "🤩",
+			"id": "5267234393008674329"
+		},
+		{
+			"char": "🤩",
+			"id": "5267216835182366551"
+		},
+		{
+			"char": "🤩",
+			"id": "5269550084755852600"
+		},
+		{
+			"char": "🥇",
+			"id": "5366601218770625952"
+		},
+		{
+			"char": "💀",
+			"id": "5222020808427199534"
+		},
+		{
+			"char": "🤩",
+			"id": "5222053050746691148"
+		},
+		{
+			"char": "🔳",
+			"id": "5242546323990800227"
+		},
+		{
+			"char": "🤩",
+			"id": "5359661268879831975"
+		},
+		{
+			"char": "🤩",
+			"id": "5267244056685086574"
+		},
+		{
+			"char": "🤩",
+			"id": "5267129986648674708"
+		},
+		{
+			"char": "🤩",
+			"id": "5262709009307164342"
+		},
+		{
+			"char": "🤩",
+			"id": "5264918130030841723"
+		},
+		{
+			"char": "🤩",
+			"id": "5269330654876701121"
+		},
+		{
+			"char": "🤩",
+			"id": "5197262422204769722"
+		},
+		{
+			"char": "🤩",
+			"id": "5269213312075209747"
+		},
+		{
+			"char": "📊",
+			"id": "5440640884381088569"
+		},
+		{
+			"char": "🛠",
+			"id": "5438625982078552201"
+		},
+		{
+			"char": "🤩",
+			"id": "5269769329951412695"
+		},
+		{
+			"char": "🔍",
+			"id": "5406841746619400582"
+		},
+		{
+			"char": "🤩",
+			"id": "5222214910884206639"
+		},
+		{
+			"char": "🤩",
+			"id": "5219698339221624274"
+		},
+		{
+			"char": "🤩",
+			"id": "5220197362881812226"
+		},
+		{
+			"char": "🔑",
+			"id": "5219699447323187051"
+		},
+		{
+			"char": "🤩",
+			"id": "5219796341785386003"
+		},
+		{
+			"char": "🤩",
+			"id": "5220136550439870666"
+		},
+		{
+			"char": "🤩",
+			"id": "5219827291319720489"
+		},
+		{
+			"char": "🤩",
+			"id": "5269635756468508822"
+		},
+		{
+			"char": "🤩",
+			"id": "5244742778855906653"
+		},
+		{
+			"char": "🏠",
+			"id": "5278666865806173069"
+		},
+		{
+			"char": "🤩",
+			"id": "5260367092489690656"
+		},
+		{
+			"char": "💬",
+			"id": "5264947761010206970"
+		},
+		{
+			"char": "🛡️",
+			"id": "5222327056775275665"
+		},
+		{
+			"char": "🤩",
+			"id": "5267185159798561776"
+		},
+		{
+			"char": "🤩",
+			"id": "5269655088116306989"
+		},
+		{
+			"char": "🤩",
+			"id": "5269678577292449067"
+		},
+		{
+			"char": "🤩",
+			"id": "5269278793146604826"
+		},
+		{
+			"char": "🤩",
+			"id": "5221998324273403017"
+		},
+		{
+			"char": "🤩",
+			"id": "5267257706091158489"
+		},
+		{
+			"char": "🏅",
+			"id": "5246955129394989961"
+		},
+		{
+			"char": "🪩",
+			"id": "5404590423547082410"
+		},
+		{
+			"char": "🤩",
+			"id": "5219797656045378140"
+		},
+		{
+			"char": "🤩",
+			"id": "5219725638033758493"
+		},
+		{
+			"char": "🤩",
+			"id": "5361873855642099626"
+		},
+		{
+			"char": "🤩",
+			"id": "5222136974407653710"
+		},
+		{
+			"char": "🤩",
+			"id": "5242464796921590953"
+		},
+		{
+			"char": "🤩",
+			"id": "5242515778183389423"
+		},
+		{
+			"char": "🤩",
+			"id": "5242584828372604726"
+		},
+		{
+			"char": "🤩",
+			"id": "5240033188302055160"
+		},
+		{
+			"char": "🗼",
+			"id": "5267469813051072245"
+		},
+		{
+			"char": "🌎",
+			"id": "5242411779845286134"
+		},
+		{
+			"char": "🔱",
+			"id": "5244572324488830194"
+		},
+		{
+			"char": "🔱",
+			"id": "5244789641244074739"
+		},
+		{
+			"char": "🔱",
+			"id": "5244658460057954311"
+		},
+		{
+			"char": "🔱",
+			"id": "5242293599525168846"
+		},
+		{
+			"char": "🔱",
+			"id": "5242345362471020549"
+		},
+		{
+			"char": "🔱",
+			"id": "5244604777261720879"
+		},
+		{
+			"char": "🔱",
+			"id": "5244821591505790517"
+		},
+		{
+			"char": "🔱",
+			"id": "5244870305024861925"
+		},
+		{
+			"char": "🔱",
+			"id": "5244955053319547685"
+		},
+		{
+			"char": "🔱",
+			"id": "5244910054947185133"
+		},
+		{
+			"char": "🔱",
+			"id": "5244453899355578261"
+		},
+		{
+			"char": "🔱",
+			"id": "5244700507787783014"
+		},
+		{
+			"char": "🔱",
+			"id": "5242226357517182092"
+		},
+		{
+			"char": "🔱",
+			"id": "5244536401382370166"
+		},
+		{
+			"char": "🔱",
+			"id": "5244710575191122265"
+		},
+		{
+			"char": "🔱",
+			"id": "5244484127335408640"
+		},
+		{
+			"char": "🔱",
+			"id": "5244772701893061546"
+		},
+		{
+			"char": "🤩",
+			"id": "5390924761029174507"
+		},
+		{
+			"char": "🟦",
+			"id": "5244905373432831464"
+		},
+		{
+			"char": "🤩",
+			"id": "5244494289228031261"
+		},
+		{
+			"char": "🤩",
+			"id": "5244470400619929695"
+		},
+		{
+			"char": "📢",
+			"id": "5242217484114748015"
+		},
+		{
+			"char": "🤩",
+			"id": "5244821282268144203"
+		},
+		{
+			"char": "🔳",
+			"id": "5244617382990734116"
+		},
+		{
+			"char": "🤩",
+			"id": "5283186567265949039"
+		},
+		{
+			"char": "🤩",
+			"id": "5285127763634721509"
+		},
+		{
+			"char": "🤩",
+			"id": "5284982056869204285"
+		},
+		{
+			"char": "🤩",
+			"id": "5285394279240341423"
+		},
+		{
+			"char": "🤩",
+			"id": "5285191165941947063"
+		},
+		{
+			"char": "🤩",
+			"id": "5285063304765543706"
+		},
+		{
+			"char": "🤩",
+			"id": "5285046300990020986"
+		},
+		{
+			"char": "🤩",
+			"id": "5285096311589213234"
+		},
+		{
+			"char": "🤩",
+			"id": "5285107139201769116"
+		},
+		{
+			"char": "🤩",
+			"id": "5287314786751646970"
+		},
+		{
+			"char": "🤩",
+			"id": "5287233465840866692"
+		},
+		{
+			"char": "🤩",
+			"id": "5287785034130956166"
+		},
+		{
+			"char": "🤩",
+			"id": "5289486949281733775"
+		},
+		{
+			"char": "🤩",
+			"id": "5303191562858041119"
+		},
+		{
+			"char": "🤩",
+			"id": "5352702601521568688"
+		},
+		{
+			"char": "🤩",
+			"id": "5355043972878210835"
+		},
+		{
+			"char": "🤩",
+			"id": "5352614451612783488"
+		},
+		{
+			"char": "🤩",
+			"id": "5379681911037800592"
+		},
+		{
+			"char": "🤩",
+			"id": "5379751489507989919"
+		},
+		{
+			"char": "🤩",
+			"id": "5380053060636677623"
+		},
+		{
+			"char": "🤩",
+			"id": "5384198464286529554"
+		},
+		{
+			"char": "🤩",
+			"id": "5395534742701513274"
+		},
+		{
+			"char": "🤩",
+			"id": "5393196953347593778"
+		},
+		{
+			"char": "🤩",
+			"id": "5436329085108263600"
+		},
+		{
+			"char": "🤩",
+			"id": "5436080831703588271"
+		},
+		{
+			"char": "🤩",
+			"id": "5461161301818514957"
+		},
+		{
+			"char": "🤩",
+			"id": "5199886599978000401"
+		},
+		{
+			"char": "♻️",
+			"id": "5258153285956704104"
+		},
+		{
+			"char": "🤩",
+			"id": "5258062026491597725"
+		},
+		{
+			"char": "🤩",
+			"id": "5258066446012944945"
+		},
+		{
+			"char": "🤩",
+			"id": "5363902836847449344"
+		},
+		{
+			"char": "🤩",
+			"id": "5289987175532767142"
+		},
+		{
+			"char": "🤩",
+			"id": "5289931817699286174"
+		},
+		{
+			"char": "🤩",
+			"id": "5289705649016447903"
+		},
+		{
+			"char": "🤩",
+			"id": "5291778670816434092"
+		},
+		{
+			"char": "🤩",
+			"id": "5296479637075957990"
+		},
+		{
+			"char": "🤩",
+			"id": "5296446922310064631"
+		},
+		{
+			"char": "🤩",
+			"id": "5294163421342770006"
+		},
+		{
+			"char": "🤩",
+			"id": "5294423030640974196"
+		},
+		{
+			"char": "🤩",
+			"id": "5296318124830794134"
+		},
+		{
+			"char": "🤩",
+			"id": "5305543976575609269"
+		},
+		{
+			"char": "🤩",
+			"id": "5314675038392195614"
+		},
+		{
+			"char": "🤩",
+			"id": "5312115289423386715"
+		},
+		{
+			"char": "🤩",
+			"id": "5314321931950925026"
+		},
+		{
+			"char": "🤩",
+			"id": "5348036033655119413"
+		}
         const Inline = Quill.import('blots/inline');
         
-        // Регистрируем Спойлер
+        // Регистрация Спойлера
         class SpoilerBlot extends Inline {
             static create() { let node = super.create(); node.setAttribute('class', 'tg-spoiler'); return node; }
             static formats(node) { return true; }
@@ -78,7 +769,7 @@
         SpoilerBlot.blotName = 'spoiler'; SpoilerBlot.tagName = 'span';
         Quill.register(SpoilerBlot);
 
-        // Регистрируем Премиум-Эмодзи
+        // Регистрация Премиум-Эмодзи
         class TgEmojiBlot extends Inline {
             static create(value) {
                 let node = super.create();
@@ -91,7 +782,7 @@
         TgEmojiBlot.blotName = 'tg-emoji'; TgEmojiBlot.tagName = 'span';
         Quill.register(TgEmojiBlot);
 
-        // Регистрируем Сворачиваемую цитату
+        // Регистрация Сворачиваемой цитаты
         const Blockquote = Quill.import('formats/blockquote');
         class ExpandableBlockquote extends Blockquote {
             static create() { let node = super.create(); node.setAttribute('class', 'tg-expandable-blockquote'); return node; }
@@ -127,13 +818,13 @@
                             }
                         },
                         'tg-emoji': function() {
+                            // Кнопка в тулбаре осталась для ручного ввода ID, если эмодзи нет в паке
                             const range = this.quill.getSelection();
                             if (range) {
                                 const currentFormat = this.quill.getFormat(range)['tg-emoji'];
-                                if (currentFormat) {
-                                    this.quill.removeFormat(range.index, range.length);
-                                } else {
-                                    const emojiId = prompt('Введи скопированный ID премиум-эмодзи:');
+                                if (currentFormat) { this.quill.removeFormat(range.index, range.length); } 
+                                else {
+                                    const emojiId = prompt('Введи ручной ID премиум-эмодзи:');
                                     if (emojiId) { this.quill.format('tg-emoji', emojiId.trim()); }
                                 }
                             }
@@ -141,6 +832,29 @@
                     }
                 }
             }
+        });
+
+        // ГЕНЕРАЦИЯ СЕТКИ ЭМОДЗИ НА ЭКРАНЕ
+        const gridContainer = document.getElementById('emoji-pack-grid');
+        myEmojiPack.forEach(emoji => {
+            const btn = document.createElement('button');
+            btn.className = 'emoji-btn';
+            btn.innerText = emoji.char;
+            btn.title = `ID: ${emoji.id}`;
+            
+            // Обработка клика по эмодзи из пака
+            btn.addEventListener('click', (e) => {
+                e.preventDefault(); // Чтобы фокус с редактора не слетал полностью
+                
+                const range = quill.getSelection(true); // Берём текущую позицию курсора
+                if (range) {
+                    // Вставляем символ эмодзи и сразу вешаем на него формат премиум-эмодзи с нужным ID
+                    quill.insertText(range.index, emoji.char, 'tg-emoji', emoji.id);
+                    // Сдвигаем курсор вперёд, чтобы можно было писать дальше
+                    quill.setSelection(range.index + emoji.char.length);
+                }
+            });
+            gridContainer.appendChild(btn);
         });
 
         document.getElementById('send-btn').addEventListener('click', () => {
