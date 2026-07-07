@@ -97,25 +97,33 @@
             }
         });
 
-        // Обработчик кнопки отправки
         document.getElementById('send-btn').addEventListener('click', () => {
-            // Получаем HTML содержимое редактора
-            let htmlContent = quill.getSemanticHTML();
-            const channelId = document.getElementById('channel-id').value.trim();
+    try {
+        // 1. Получаем HTML содержимое редактора
+        let htmlContent = quill.getSemanticHTML();
+        const channelId = document.getElementById('channel-id').value.trim();
 
-            // Небольшой хак: Telegram Bot API преобразует обычные blockquote в нативные блоки.
-            // Для поддержки свертывания (фича 2026 года), мы можем кастомизировать теги, 
-            // но для начала проверим базовую отправку списков и блоков кода.
+        if (!htmlContent || htmlContent === '<p><br></p>') {
+            alert('Сначала напиши что-нибудь в редакторе!');
+            return;
+        }
 
-            const dataToSend = {
-                html: htmlContent,
-                channel_id: channelId ? channelId : null
-            };
+        const dataToSend = {
+            html: htmlContent,
+            channel_id: channelId ? channelId : null
+        };
 
-            // Отправляем данные обратно боту
-            tg.sendData(JSON.stringify(dataToSend));
-            tg.close(); // Закрываем Web App
-        });
+        // Текст для проверки перед отправкой
+        alert('Отправляем данные: ' + JSON.stringify(dataToSend));
+
+        // 2. Отправляем данные обратно боту
+        tg.sendData(JSON.stringify(dataToSend));
+        tg.close(); 
+    } catch (err) {
+        // Если упал сам JS — мы увидим ошибку на экране смартфона/ПК
+        alert('Ошибка в JS: ' + err.message);
+    }
+});
     </script>
 </body>
 </html>
