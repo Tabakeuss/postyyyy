@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Post Editor</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            margin: 0;
+            padding: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        #editor-container {
+            height: 300px;
+            background: #fff;
+            color: #000;
+            border-radius: 8px;
+        }
+        .ql-toolbar {
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            background: #f5f5f5;
+        }
+        .ql-container {
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+        #send-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="form-group">
+        <label for="channel-id">Юзернейм канала (куда постить):</label>
+        <input type="text" id="channel-id" placeholder="Например: @my_channel_news">
+    </div>
+
+    <div class="form-group">
+        <label>Текст поста:</label>
+        <div id="editor-container"></div>
+    </div>
+
+    <button id="send-btn">Опубликовать в канал</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <script>
+        // Инициализируем Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); // Расширяем на весь экран
+
+        // Инициализируем редактор Quill с нужными нам фичами (жирный, курсив, списки, код, блоки)
+        const quill = new Quill('#editor-container', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'strike'],        // Форматирование
+                    ['code', 'code-block'],              // Код
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }], // Списки
+                    ['blockquote'],                      // Цитаты / Сворачиваемые блоки
+                    ['clean']                            // Сброс
+                ]
+            }
+        });
+
+        // Обработчик кнопки отправки
+        document.getElementById('send-btn').addEventListener('click', () => {
+            // Получаем HTML содержимое редактора
+            let htmlContent = quill.getSemanticHTML();
+            const channelId = document.getElementById('channel-id').value.trim();
+
+            // Небольшой хак: Telegram Bot API преобразует обычные blockquote в нативные блоки.
+            // Для поддержки свертывания (фича 2026 года), мы можем кастомизировать теги, 
+            // но для начала проверим базовую отправку списков и блоков кода.
+
+            const dataToSend = {
+                html: htmlContent,
+                channel_id: channelId ? channelId : null
+            };
+
+            // Отправляем данные обратно боту
+            tg.sendData(JSON.stringify(dataToSend));
+            tg.close(); // Закрываем Web App
+        });
+    </script>
+</body>
+</html>
