@@ -3,26 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Post Editor</title>
+    <title>Telegram Advanced Editor</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--tg-theme-bg-color, #ffffff);
             color: var(--tg-theme-text-color, #000000);
             margin: 0;
             padding: 15px;
         }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
         input[type="text"] {
             width: 100%;
             padding: 10px;
@@ -32,107 +25,135 @@
             background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
             color: var(--tg-theme-text-color, #000000);
         }
-        #editor-container {
-            height: 300px;
-            background: #fff;
-            color: #000;
-            border-radius: 8px;
-        }
-        .ql-toolbar {
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
-            background: #f5f5f5;
-        }
-        .ql-container {
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
-        }
+        #editor-container { height: 350px; background: #fff; color: #000; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
+        .ql-toolbar { border-top-left-radius: 8px; border-top-right-radius: 8px; background: #f5f5f5; }
+        
+        /* Стилизация кастомных кнопок в тулбаре */
+        .ql-spoiler { width: auto !important; padding: 0 5px !important; font-size: 12px !important; font-weight: bold; color: #d9534f; }
+        .ql-spoiler::after { content: " 👁 Спойлер"; }
+        .ql-expandable-blockquote { width: auto !important; padding: 0 5px !important; font-size: 12px !important; font-weight: bold; color: #0275d8; }
+        .ql-expandable-blockquote::after { content: " 📂 Раскр. цитата"; }
+
+        /* Эффекты оформления прямо внутри редактора */
+        .tg-spoiler { background-color: #ddd; color: transparent; text-shadow: 0 0 6px rgba(0,0,0,0.6); border-radius: 4px; padding: 0 2px; cursor: pointer; }
+        .tg-spoiler:hover { color: #000; text-shadow: none; background-color: #eee; }
+        .tg-expandable-blockquote { border-left: 4px dashed #0275d8 !important; background-color: #f4f9ff; padding-left: 10px; margin: 5px 0; font-style: italic; }
+        
         #send-btn {
-            display: block;
-            width: 100%;
-            padding: 12px;
+            display: block; width: 100%; padding: 12px;
             background-color: var(--tg-theme-button-color, #2481cc);
             color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 15px;
+            border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px;
         }
     </style>
 </head>
 <body>
 
     <div class="form-group">
-        <label for="channel-id">Юзернейм канала (куда постить):</label>
+        <label for="channel-id">Юзернейм канала:</label>
         <input type="text" id="channel-id" placeholder="Например: @my_channel_news">
     </div>
 
     <div class="form-group">
-        <label>Текст поста:</label>
+        <label>Контент поста:</label>
         <div id="editor-container"></div>
     </div>
 
-    <button id="send-btn">Опубликовать в канал</button>
+    <button id="send-btn">Опубликовать</button>
 
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script>
-        // Инициализируем Telegram Web App
         const tg = window.Telegram.WebApp;
-        
-        try {
-            tg.ready();
-            tg.expand(); // Расширяем на весь экран смартфона
-        } catch (e) {
-            alert("Ошибка инициализации Telegram WebApp: " + e.message);
-        }
+        tg.ready();
+        tg.expand();
 
-        // Настраиваем редактор
+        // Регистрируем формат Спойлера для Quill
+        const Inline = Quill.import('blots/inline');
+        class SpoilerBlot extends Inline {
+            static create() {
+                let node = super.create();
+                node.setAttribute('class', 'tg-spoiler');
+                return node;
+            }
+            static formats(node) { return true; }
+        }
+        SpoilerBlot.blotName = 'spoiler';
+        SpoilerBlot.tagName = 'span';
+        Quill.register(SpoilerBlot);
+
+        // Регистрируем формат Раскрывающейся цитаты для Quill
+        const Blockquote = Quill.import('formats/blockquote');
+        class ExpandableBlockquote extends Blockquote {
+            static create() {
+                let node = super.create();
+                node.setAttribute('class', 'tg-expandable-blockquote');
+                return node;
+            }
+            static formats(node) { return true; }
+        }
+        ExpandableBlockquote.blotName = 'expandable-blockquote';
+        ExpandableBlockquote.tagName = 'blockquote';
+        Quill.register(ExpandableBlockquote);
+
+        // Инициализация редактора с кастомным тулбаром
         const quill = new Quill('#editor-container', {
             theme: 'snow',
             modules: {
-                toolbar: [
-                    ['bold', 'italic', 'strike'],        
-                    ['code', 'code-block'],              
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
-                    ['blockquote'],                      
-                    ['clean']                            
-                ]
+                toolbar: {
+                    container: [
+                        ['bold', 'italic'],
+                        ['blockquote', 'expandable-blockquote'], // Обычная и Сворачиваемая цитаты
+                        ['spoiler'],                             // Кнопка спойлера
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['clean']
+                    ],
+                    handlers: {
+                        'spoiler': function() {
+                            const range = this.quill.getSelection();
+                            if (range) {
+                                const format = this.quill.getFormat(range);
+                                if (format.spoiler) {
+                                    this.quill.removeFormat(range.index, range.length);
+                                } else {
+                                    this.quill.format('spoiler', true);
+                                }
+                            }
+                        },
+                        'expandable-blockquote': function() {
+                            const range = this.quill.getSelection();
+                            if (range) {
+                                const format = this.quill.getFormat(range);
+                                if (format['expandable-blockquote']) {
+                                    this.quill.format('expandable-blockquote', false);
+                                } else {
+                                    this.quill.format('expandable-blockquote', true);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         });
 
-        // Обработчик кнопки отправки
         document.getElementById('send-btn').addEventListener('click', () => {
             try {
-                // Получаем чистый HTML из редактора
                 let htmlContent = quill.getSemanticHTML();
                 const channelId = document.getElementById('channel-id').value.trim();
 
-                // Проверяем, не пустой ли текст
                 if (!htmlContent || htmlContent === '<p><br></p>') {
-                    alert('Сначала напиши что-нибудь в редакторе!');
+                    alert('Редактор пуст!');
                     return;
                 }
 
-                // Формируем объект с данными
                 const dataToSend = {
                     html: htmlContent,
                     channel_id: channelId ? channelId : null
                 };
 
-                // Отладочное окно: покажет, что именно отправляется в бот
-                alert('Отправляем данные боту:\n' + JSON.stringify(dataToSend, null, 2));
-
-                // Передаем данные в Telegram
                 tg.sendData(JSON.stringify(dataToSend));
-                
-                // Закрываем окно мини-приложения
                 tg.close(); 
-                
             } catch (err) {
-                // Если упадет сам JavaScript — мы увидим это в окне алерта
-                alert('Произошла ошибка внутри WebApp:\n' + err.message);
+                alert('Ошибка: ' + err.message);
             }
         });
     </script>
