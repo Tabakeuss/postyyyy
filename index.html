@@ -858,18 +858,35 @@
             gridContainer.appendChild(btn);
         });
 
-        document.getElementById('send-btn').addEventListener('click', () => {
+document.getElementById('send-btn').addEventListener('click', () => {
             try {
                 let htmlContent = quill.getSemanticHTML();
                 const channelId = document.getElementById('channel-id').value.trim();
-                if (!htmlContent || htmlContent === '<p><br></p>') return;
+                
+                // 1. Проверяем на пустоту. Если пусто — покажем красивое уведомление Телеграма, а не просто молчание
+                if (!htmlContent || htmlContent === '<p><br></p>' || htmlContent === '<p></p>') {
+                    tg.showAlert('Пожалуйста, напишите что-нибудь в редакторе перед публикацией!');
+                    return;
+                }
 
+                // 2. Очищаем HTML от тегов <p>, которые Telegram HTML не поддерживает (исправляет ошибку со скриншота #1)
+                let formattedHtml = htmlContent
+                    .replace(/<p><br><\/p>/g, '\n') // заменяем пустые строки на переносы
+                    .replace(/<p>/g, '')            // просто удаляем открывающий <p>
+                    .replace(/<\/p>/g, '\n')         // заменяем закрывающий </p> на перенос строки
+                    .trim();                        // убираем лишние пробелы по краям
+
+                // 3. Отправляем данные боту
                 tg.sendData(JSON.stringify({
-                    html: htmlContent,
+                    html: formattedHtml,
                     channel_id: channelId ? channelId : null
                 }));
+                
                 tg.close(); 
-            } catch (err) { alert('Ошибка: ' + err.message); }
+            } catch (err) { 
+                // Если что-то пойдет не так, мы гарантированно увидим системное окно Telegram с ошибкой
+                tg.showAlert('Ошибка при отправке: ' + err.message); 
+            }
         });
     </script>
 </body>
